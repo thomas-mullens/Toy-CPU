@@ -1,0 +1,32 @@
+CHIP CPU {
+    IN Instruction[6], fromM[16], Reset;
+    OUT toM[16], addressM[15], writeM, PCout[15]; 
+
+    PARTS:
+
+    // Put code here
+    DMux4Way(in=true, sel=Instruction[4..5], a=r, b=writeM, c=a, d=j);
+    
+    Or(a=a, b=r, out=o1);
+    DMux4Way(in=o1, sel=Instruction[2..3], a=r0, b=r1, c=r2, d=r3);
+
+    Register(in=fm, load=r0, out=reg0);
+    Register(in=fm, load=r1, out=reg1);
+    Register(in=fm, load=r2, out=reg2);
+    Register(in=fm, load=r3, out=reg3);
+
+    Mux4Way16(a=reg0, b=reg1, c=reg2, d=reg3, sel=Instruction[2..3], out=rx);
+    Mux4Way16(a=reg0, b=reg1, c=reg2, d=reg3, sel=Instruction[0..1], out=ry, out=toM);
+
+    Mux16(a=rx, b=ry, sel=r, out[0..14]=addressM);
+
+    Add16(a=rx, b=ry, out=a16);
+    Mux16(a=fromM, b=a16, sel=Instruction[5], out=fm);
+
+    Or16Way(in=ry, out=o16w);
+    Not(in=o16w, out=no16w);
+
+    And(a=j, b=no16w, out=an16);
+    PC(in=rx, load=an16, inc=true, reset=Reset, out[0..14]=PCout);
+
+}
